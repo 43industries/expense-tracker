@@ -1,13 +1,13 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
+import Animated, { FadeIn, FadeOutLeft, LinearTransition } from 'react-native-reanimated';
 
 import { ExpenseRow } from '@/components/ExpenseRow';
+import { SwipeableRow } from '@/components/SwipeableRow';
 import { Radius, Spacing } from '@/constants/theme';
 import { useColors } from '@/hooks/use-colors';
 import { useExpenseStore } from '@/store/expenses';
-import type { Expense } from '@/types/expense';
 
 export default function ExpensesScreen() {
   const colors = useColors();
@@ -22,13 +22,6 @@ export default function ExpensesScreen() {
       )
     : expenses;
 
-  const confirmDelete = (expense: Expense) => {
-    Alert.alert('Delete expense', `Delete "${expense.title}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => removeExpense(expense.id) },
-    ]);
-  };
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TextInput
@@ -42,33 +35,30 @@ export default function ExpensesScreen() {
         ]}
         clearButtonMode="while-editing"
       />
+      {expenses.length > 0 && (
+        <Text style={[styles.hint, { color: colors.textSecondary }]}>Swipe left on an expense to delete it.</Text>
+      )}
 
-      <FlatList
+      <Animated.FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         keyboardShouldPersistTaps="handled"
+        itemLayoutAnimation={LinearTransition}
         ListEmptyComponent={
           <Text style={[styles.empty, { color: colors.textSecondary }]}>
             {q ? 'No expenses match your search.' : 'No expenses yet.'}
           </Text>
         }
         renderItem={({ item }) => (
-          <View style={styles.row}>
-            <View style={{ flex: 1 }}>
+          <Animated.View entering={FadeIn} exiting={FadeOutLeft}>
+            <SwipeableRow onDelete={() => removeExpense(item.id)}>
               <ExpenseRow
                 expense={item}
                 onPress={() => router.push({ pathname: '/expense/[id]', params: { id: item.id } })}
               />
-            </View>
-            <Pressable
-              onPress={() => confirmDelete(item)}
-              hitSlop={8}
-              accessibilityLabel={`Delete ${item.title}`}
-              style={styles.delete}>
-              <Ionicons name="trash-outline" size={22} color={colors.danger} />
-            </Pressable>
-          </View>
+            </SwipeableRow>
+          </Animated.View>
         )}
       />
     </View>
@@ -88,17 +78,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 16,
   },
+  hint: {
+    fontSize: 12,
+    marginHorizontal: Spacing.md,
+    marginTop: Spacing.sm,
+  },
   list: {
     padding: Spacing.md,
     gap: Spacing.sm,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  delete: {
-    padding: Spacing.xs,
   },
   empty: {
     textAlign: 'center',

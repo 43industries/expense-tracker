@@ -1,56 +1,108 @@
-# Welcome to your Expo app 👋
+# Expense Tracker
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+React Native (Expo SDK 57, TypeScript, Expo Router) expense tracker built in four phases for the
+React Native Intern Program.
 
-## Get started
+| Phase | Features |
+| --- | --- |
+| 1. Basics | Balance card, recent expenses, validated add-expense form |
+| 2. Lists and navigation | Tabs, searchable `FlatList`, delete, edit screen, data saved with AsyncStorage |
+| 3. Real data | Zustand stores, monthly totals chart, dark mode, USD to KES with TanStack Query |
+| 4. Ship it | Receipt photos, swipe-to-delete animation, Supabase login + cloud sync, EAS build |
 
-1. Install dependencies
+## Run it on your phone
+
+1. Install **Expo Go** from the Play Store / App Store.
+2. In this folder:
 
    ```bash
    npm install
-   ```
-
-2. Start the app
-
-   ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+3. Scan the QR code (Android: from Expo Go; iPhone: with the Camera app). Your phone and
+   computer must be on the same Wi-Fi; if not, use `npx expo start --tunnel`.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+Without Supabase keys the app runs **local-only**: no login screen, data stays on the phone.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Turn on login and cloud sync (Supabase)
 
-## Get a fresh project
+1. Create a free project at [supabase.com](https://supabase.com).
+2. Open **SQL Editor**, paste [`supabase/schema.sql`](supabase/schema.sql) and run it. This creates
+   the `expenses` table, row-level security (each user only sees their own rows) and a private
+   `receipts` storage bucket.
+3. Copy `.env.example` to `.env.local` and fill in the values from
+   **Project Settings > API**.
+4. Restart `npx expo start`. The app now opens on the login screen.
 
-When you're ready, run:
+Supabase requires email confirmation by default. For quick testing you can turn it off under
+**Authentication > Sign In / Providers > Email**.
+
+## Build an installable APK (EAS Build)
 
 ```bash
-npm run reset-project
+npm install -g eas-cli
+eas login
+eas init           # links the project to your Expo account
+eas env:create --name EXPO_PUBLIC_SUPABASE_URL --value <url> --environment preview
+eas env:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <key> --environment preview
+eas build -p android --profile preview
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+When it finishes, open the link on your phone to download and install the APK.
 
-### Other setup steps
+## Project structure
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```
+src/
+  app/                 Expo Router screens (file name = route)
+    _layout.tsx        providers, theme, login guard, auto sync
+    login.tsx
+    add.tsx            add-expense modal
+    expense/[id].tsx   edit screen (receives only the id)
+    (tabs)/            Home, Expenses, Stats, Settings
+  components/          BalanceCard, ExpenseRow, ExpenseForm, ReceiptPicker, SwipeableRow, ...
+  store/               Zustand stores: expenses, settings, auth
+  hooks/               useColors (theme), useMoney (currency), useAutoSync
+  lib/                 supabase client, SecureStore adapter, sync, currency API, stats helpers
+supabase/schema.sql    database + storage setup
+```
 
-## Learn more
+### How data flows
 
-To learn more about developing your project with Expo, look at the following resources:
+- Every amount is stored in **USD**. `useMoney()` converts to KES only for display, and the form
+  converts what you type back to USD.
+- Monthly totals and the balance are **derived** from the expense list with `useMemo`, never stored.
+- The expense store is persisted to AsyncStorage. Local changes are recorded in `dirty` / `deleted`
+  lists; `syncExpenses()` pushes those to Supabase, uploads receipt photos, then pulls the cloud
+  copy. It runs after login, 1.5 s after a change, and when the app returns to the foreground.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Self-check answers
 
-## Join the community
+**Phase 1: why does the screen update after `setAmount(5)` but not after `amount = 5`?**
+`setAmount` tells React the state changed, so React re-runs the component with the new value.
+`amount = 5` only changes a local variable inside one render; React doesn't know about it, and
+on the next render the variable is recreated from state anyway.
 
-Join our community of developers creating universal apps.
+**Phase 2: what happens if you forget the dependency array in `useEffect`?**
+The effect runs after *every* render. If the effect also sets state (like loading expenses), that
+causes another render, which runs the effect again: an infinite loop. `[]` means run once after
+mount; `[a, b]` means run when `a` or `b` changes.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+**Phase 3: what does the user see if the currency API is down, and what should they see?**
+Without handling it they'd see a blank or crashed screen, or a stuck spinner. In this app
+TanStack Query retries twice, then the app falls back to USD amounts and shows a banner
+("Couldn't load KES rates, so amounts are shown in USD") with a **Retry** button.
+
+**Phase 4: why is SecureStore safer than AsyncStorage for a login token?**
+AsyncStorage is a plain unencrypted file inside the app's storage; anyone with a backup, a rooted
+phone or a debug build can read it. SecureStore saves values in the iOS Keychain / Android
+Keystore, which are encrypted with hardware-backed keys. Supabase sessions are larger than
+SecureStore's ~2 KB per-value limit, so `src/lib/secure-storage.ts` splits them into chunks.
+
+## Windows note
+
+If `npm install` fails with `ENOTEMPTY` or packages are missing files, the project path is too long
+for Windows' 260-character limit. Move the project to a short path like `C:\dev\expense-tracker`,
+or enable long paths (run as admin:
+`New-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem -Name LongPathsEnabled -Value 1 -PropertyType DWORD -Force`).

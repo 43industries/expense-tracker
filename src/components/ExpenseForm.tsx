@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { ReceiptPicker } from '@/components/ReceiptPicker';
 import { Radius, Spacing } from '@/constants/theme';
 import { useColors } from '@/hooks/use-colors';
 import { useMoney } from '@/hooks/use-money';
@@ -41,7 +42,15 @@ export function ExpenseForm({ initial, submitLabel = 'Add expense', onSubmit }: 
     initial?.amount ? String(Math.round(toDisplay(initial.amount) * 100) / 100) : '',
   );
   const [category, setCategory] = useState<Category>(initial?.category ?? 'Food');
+  const [receiptUri, setReceiptUri] = useState(initial?.receiptUri);
+  const [receiptPath, setReceiptPath] = useState(initial?.receiptPath);
   const [errors, setErrors] = useState<Errors>({});
+
+  const changeReceipt = (uri: string | undefined) => {
+    setReceiptUri(uri);
+    // A new or removed photo means the uploaded copy no longer applies.
+    setReceiptPath(undefined);
+  };
 
   const handleSubmit = () => {
     const nextErrors = validateExpense(title, amountText);
@@ -52,12 +61,15 @@ export function ExpenseForm({ initial, submitLabel = 'Add expense', onSubmit }: 
       title: title.trim(),
       amount: Math.round(fromDisplay(Number(amountText.replace(',', '.'))) * 1e6) / 1e6,
       category,
+      receiptUri,
+      receiptPath,
     });
 
     if (!initial) {
       setTitle('');
       setAmountText('');
       setCategory('Food');
+      changeReceipt(undefined);
     }
   };
 
@@ -118,6 +130,8 @@ export function ExpenseForm({ initial, submitLabel = 'Add expense', onSubmit }: 
           })}
         </View>
       </View>
+
+      <ReceiptPicker uri={receiptUri} path={receiptPath} onChange={changeReceipt} />
 
       <Pressable
         onPress={handleSubmit}

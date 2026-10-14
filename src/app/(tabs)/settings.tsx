@@ -1,11 +1,24 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { CurrencyStatus } from '@/components/CurrencyStatus';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { Radius, Spacing } from '@/constants/theme';
 import { useColors } from '@/hooks/use-colors';
 import { useMoney } from '@/hooks/use-money';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { syncExpenses } from '@/lib/sync';
+import { useAuthStore } from '@/store/auth';
+import { useExpenseStore } from '@/store/expenses';
 import { useSettingsStore, type DisplayCurrency, type ThemePreference } from '@/store/settings';
 
 const THEME_OPTIONS = [
@@ -91,11 +104,92 @@ export default function SettingsScreen() {
         </View>
         {budgetError && <Text style={{ color: colors.danger }}>{budgetError}</Text>}
       </View>
+
+      <AccountSection />
     </ScrollView>
   );
 }
 
+function AccountSection() {
+  const colors = useColors();
+  const session = useAuthStore((s) => s.session);
+  const { syncing, syncError, lastSyncedAt, dirty, deleted, clear } = useExpenseStore();
+  const pending = dirty.length + deleted.length;
+
+  const cardStyle = [styles.card, { backgroundColor: colors.card, borderColor: colors.border }];
+
+  if (!isSupabaseConfigured) {
+    return (
+      <View style={cardStyle}>
+        <Text style={[styles.title, { color: colors.text }]}>Cloud sync</Text>
+        <Text style={[styles.hint, { color: colors.textSecondary }]}>
+          Off. Expenses are saved on this phone only. Add your Supabase keys to .env.local and
+          restart Expo to enable login and sync.
+        </Text>
+      </View>
+    );
+  }
+
+  const signOut = () => {
+    const doSignOut = async () => {
+      await supabase.auth.signOut();
+      clear();
+    };
+    if (pending === 0) {
+      doSignOut();
+      return;
+    }
+    Alert.alert(
+      'Unsynced changes',
+      `${pending} change(s) haven't been uploaded yet and will be lost if you sign out.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign out anyway', style: 'destructive', onPress: doSignOut },
+      ],
+    );
+  };
+
+  return (
+    <View style={cardStyle}>
+      <Text style={[styles.title, { color: colors.text }]}>Account</Text>
+      <Text style={{ color: colors.text }}>{session?.user.email}</Text>
+      <Text style={[styles.hint, { color: syncError ? colors.danger : colors.textSecondary }]}>
+        {syncing
+          ? 'Syncing...'
+          : syncError
+            ? `Sync failed: ${syncError}`
+            : lastSyncedAt
+              ? `Last synced ${new Date(lastSyncedAt).toLocaleString('en-GB')}`
+              : 'Not synced yet'}
+        {pending > 0 && !syncing ? ` · ${pending} pending` : ''}
+      </Text>
+      <View style={styles.budgetRow}>
+        <Pressable
+          onPress={() => syncExpenses()}
+          disabled={syncing}
+          style={[styles.outlineButton, { borderColor: colors.border }]}>
+          {syncing ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : (
+            <Text style={{ color: colors.primary, fontWeight: '700' }}>Sync now</Text>
+          )}
+        </Pressable>
+        <Pressable onPress={signOut} style={[styles.outlineButton, { borderColor: colors.border }]}>
+          <Text style={{ color: colors.danger, fontWeight: '700' }}>Sign out</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  outlineButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: Radius,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
   content: {
     padding: Spacing.md,
     gap: Spacing.md,

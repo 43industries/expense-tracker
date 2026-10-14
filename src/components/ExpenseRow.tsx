@@ -1,3 +1,4 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Radius, Spacing } from '@/constants/theme';
@@ -27,9 +28,14 @@ export function ExpenseRow({ expense, onPress }: Props) {
         <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
           {expense.title}
         </Text>
-        <Text style={[styles.meta, { color: colors.textSecondary }]}>
-          {expense.category} · {formatDate(expense.date)}
-        </Text>
+        <View style={styles.metaRow}>
+          <Text style={[styles.meta, { color: colors.textSecondary }]}>
+            {expense.category} · {formatDate(expense.date)}
+          </Text>
+          {(expense.receiptUri || expense.receiptPath) && (
+            <Ionicons name="receipt-outline" size={13} color={colors.textSecondary} />
+          )}
+        </View>
       </View>
       <Text style={[styles.amount, { color: colors.danger }]}>-{format(expense.amount)}</Text>
     </Pressable>
@@ -52,6 +58,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
   },
   meta: {
     fontSize: 13,
