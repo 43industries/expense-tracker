@@ -1,4 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 // SecureStore values should stay under ~2 KB, but a Supabase session (access + refresh
 // token + user) is usually bigger, so it is split across several keys.
@@ -35,4 +36,17 @@ async function setItem(key: string, value: string): Promise<void> {
   await SecureStore.setItemAsync(countKey(key), String(chunks.length));
 }
 
-export const secureStorage = { getItem, setItem, removeItem };
+// SecureStore has no web implementation; browsers only offer localStorage.
+const webStorage = {
+  getItem: async (key: string) =>
+    typeof localStorage === 'undefined' ? null : localStorage.getItem(key),
+  setItem: async (key: string, value: string) => {
+    if (typeof localStorage !== 'undefined') localStorage.setItem(key, value);
+  },
+  removeItem: async (key: string) => {
+    if (typeof localStorage !== 'undefined') localStorage.removeItem(key);
+  },
+};
+
+export const secureStorage =
+  Platform.OS === 'web' ? webStorage : { getItem, setItem, removeItem };
