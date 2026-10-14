@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Radius, Spacing } from '@/constants/theme';
 import { useColors } from '@/hooks/use-colors';
+import { useMoney } from '@/hooks/use-money';
 import { CATEGORIES, type Category, type ExpenseInput } from '@/types/expense';
 
 type Props = {
@@ -34,8 +35,11 @@ export function validateExpense(title: string, amountText: string): Errors {
 
 export function ExpenseForm({ initial, submitLabel = 'Add expense', onSubmit }: Props) {
   const colors = useColors();
+  const { currency, toDisplay, fromDisplay } = useMoney();
   const [title, setTitle] = useState(initial?.title ?? '');
-  const [amountText, setAmountText] = useState(initial?.amount ? String(initial.amount) : '');
+  const [amountText, setAmountText] = useState(
+    initial?.amount ? String(Math.round(toDisplay(initial.amount) * 100) / 100) : '',
+  );
   const [category, setCategory] = useState<Category>(initial?.category ?? 'Food');
   const [errors, setErrors] = useState<Errors>({});
 
@@ -46,7 +50,7 @@ export function ExpenseForm({ initial, submitLabel = 'Add expense', onSubmit }: 
 
     onSubmit({
       title: title.trim(),
-      amount: Math.round(Number(amountText.replace(',', '.')) * 100) / 100,
+      amount: Math.round(fromDisplay(Number(amountText.replace(',', '.'))) * 1e6) / 1e6,
       category,
     });
 
@@ -78,7 +82,7 @@ export function ExpenseForm({ initial, submitLabel = 'Add expense', onSubmit }: 
       </View>
 
       <View style={styles.field}>
-        <Text style={[styles.label, { color: colors.textSecondary }]}>Amount (USD)</Text>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>Amount ({currency})</Text>
         <TextInput
           value={amountText}
           onChangeText={setAmountText}

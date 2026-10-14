@@ -3,12 +3,12 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-na
 
 import { ExpenseForm } from '@/components/ExpenseForm';
 import { Spacing } from '@/constants/theme';
-import { useExpenses } from '@/context/ExpensesContext';
 import { useColors } from '@/hooks/use-colors';
+import { useExpenseStore } from '@/store/expenses';
 
 export default function AddExpenseScreen() {
   const colors = useColors();
-  const { addExpense } = useExpenses();
+  const addExpense = useExpenseStore((s) => s.addExpense);
 
   return (
     <KeyboardAvoidingView

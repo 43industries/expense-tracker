@@ -5,13 +5,14 @@ import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'r
 
 import { ExpenseRow } from '@/components/ExpenseRow';
 import { Radius, Spacing } from '@/constants/theme';
-import { useExpenses } from '@/context/ExpensesContext';
 import { useColors } from '@/hooks/use-colors';
+import { useExpenseStore } from '@/store/expenses';
 import type { Expense } from '@/types/expense';
 
 export default function ExpensesScreen() {
   const colors = useColors();
-  const { expenses, removeExpense } = useExpenses();
+  const expenses = useExpenseStore((s) => s.expenses);
+  const removeExpense = useExpenseStore((s) => s.removeExpense);
   const [query, setQuery] = useState('');
 
   const q = query.trim().toLowerCase();

@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Radius, Spacing } from '@/constants/theme';
 import { useColors } from '@/hooks/use-colors';
-import { formatMoney } from '@/lib/format';
+import { useMoney } from '@/hooks/use-money';
 
 type Props = {
   budget: number;
@@ -11,20 +11,21 @@ type Props = {
 
 export function BalanceCard({ budget, spent }: Props) {
   const colors = useColors();
+  const { format } = useMoney();
   const balance = budget - spent;
 
   return (
     <View style={[styles.card, { backgroundColor: colors.primary }]}>
-      <Text style={[styles.label, { color: colors.onPrimary }]}>Balance</Text>
-      <Text style={[styles.balance, { color: colors.onPrimary }]}>{formatMoney(balance)}</Text>
+      <Text style={[styles.label, { color: colors.onPrimary }]}>Balance this month</Text>
+      <Text style={[styles.balance, { color: colors.onPrimary }]}>{format(balance)}</Text>
       <View style={styles.row}>
         <View>
           <Text style={[styles.label, { color: colors.onPrimary }]}>Budget</Text>
-          <Text style={[styles.value, { color: colors.onPrimary }]}>{formatMoney(budget)}</Text>
+          <Text style={[styles.value, { color: colors.onPrimary }]}>{format(budget)}</Text>
         </View>
         <View style={styles.right}>
           <Text style={[styles.label, { color: colors.onPrimary }]}>Spent</Text>
-          <Text style={[styles.value, { color: colors.onPrimary }]}>{formatMoney(spent)}</Text>
+          <Text style={[styles.value, { color: colors.onPrimary }]}>{format(spent)}</Text>
         </View>
       </View>
     </View>

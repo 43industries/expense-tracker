@@ -11,15 +11,16 @@ import {
 
 import { ExpenseForm } from '@/components/ExpenseForm';
 import { Spacing } from '@/constants/theme';
-import { useExpenses } from '@/context/ExpensesContext';
 import { useColors } from '@/hooks/use-colors';
 import { formatDate } from '@/lib/format';
+import { useExpenseStore } from '@/store/expenses';
 
 export default function EditExpenseScreen() {
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { expenses, updateExpense, removeExpense } = useExpenses();
-  const expense = expenses.find((e) => e.id === id);
+  const expense = useExpenseStore((s) => s.expenses.find((e) => e.id === id));
+  const updateExpense = useExpenseStore((s) => s.updateExpense);
+  const removeExpense = useExpenseStore((s) => s.removeExpense);
 
   if (!expense) {
     return (

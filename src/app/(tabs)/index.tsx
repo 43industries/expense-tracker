@@ -1,26 +1,33 @@
 import { router } from 'expo-router';
+import { useMemo } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { BalanceCard } from '@/components/BalanceCard';
+import { CurrencyStatus } from '@/components/CurrencyStatus';
 import { ExpenseRow } from '@/components/ExpenseRow';
-import { MONTHLY_BUDGET_USD, Radius, Spacing } from '@/constants/theme';
-import { useExpenses } from '@/context/ExpensesContext';
+import { Radius, Spacing } from '@/constants/theme';
 import { useColors } from '@/hooks/use-colors';
+import { monthKey, spentInMonth } from '@/lib/stats';
+import { useExpenseStore } from '@/store/expenses';
+import { useSettingsStore } from '@/store/settings';
 
 const RECENT_COUNT = 5;
 
 export default function HomeScreen() {
   const colors = useColors();
-  const { expenses, loaded } = useExpenses();
+  const expenses = useExpenseStore((s) => s.expenses);
+  const hydrated = useExpenseStore((s) => s.hydrated);
+  const budget = useSettingsStore((s) => s.budget);
 
-  const spent = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const spent = useMemo(() => spentInMonth(expenses, monthKey(new Date())), [expenses]);
   const recent = expenses.slice(0, RECENT_COUNT);
 
   return (
     <ScrollView
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={styles.content}>
-      <BalanceCard budget={MONTHLY_BUDGET_USD} spent={spent} />
+      <CurrencyStatus />
+      <BalanceCard budget={budget} spent={spent} />
 
       <Pressable
         onPress={() => router.push('/add')}
@@ -40,7 +47,7 @@ export default function HomeScreen() {
         )}
       </View>
 
-      {!loaded ? (
+      {!hydrated ? (
         <ActivityIndicator color={colors.primary} />
       ) : recent.length === 0 ? (
         <Text style={{ color: colors.textSecondary }}>No expenses yet. Tap "Add expense" to start.</Text>

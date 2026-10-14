@@ -2,7 +2,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Radius, Spacing } from '@/constants/theme';
 import { useColors } from '@/hooks/use-colors';
-import { formatDate, formatMoney } from '@/lib/format';
+import { useMoney } from '@/hooks/use-money';
+import { formatDate } from '@/lib/format';
 import type { Expense } from '@/types/expense';
 
 type Props = {
@@ -12,6 +13,7 @@ type Props = {
 
 export function ExpenseRow({ expense, onPress }: Props) {
   const colors = useColors();
+  const { format } = useMoney();
 
   return (
     <Pressable
@@ -29,7 +31,7 @@ export function ExpenseRow({ expense, onPress }: Props) {
           {expense.category} · {formatDate(expense.date)}
         </Text>
       </View>
-      <Text style={[styles.amount, { color: colors.danger }]}>-{formatMoney(expense.amount)}</Text>
+      <Text style={[styles.amount, { color: colors.danger }]}>-{format(expense.amount)}</Text>
     </Pressable>
   );
 }
