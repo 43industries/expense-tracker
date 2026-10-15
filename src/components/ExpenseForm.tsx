@@ -10,6 +10,7 @@ import { CATEGORIES, type Category, type ExpenseInput } from '@/types/expense';
 type Props = {
   initial?: Partial<ExpenseInput>;
   submitLabel?: string;
+  disabled?: boolean;
   onSubmit: (input: ExpenseInput) => void;
 };
 
@@ -34,7 +35,12 @@ export function validateExpense(title: string, amountText: string): Errors {
   return errors;
 }
 
-export function ExpenseForm({ initial, submitLabel = 'Add expense', onSubmit }: Props) {
+export function ExpenseForm({
+  initial,
+  submitLabel = 'Add expense',
+  disabled = false,
+  onSubmit,
+}: Props) {
   const colors = useColors();
   const { currency, toDisplay, fromDisplay } = useMoney();
   const [title, setTitle] = useState(initial?.title ?? '');
@@ -135,9 +141,10 @@ export function ExpenseForm({ initial, submitLabel = 'Add expense', onSubmit }: 
 
       <Pressable
         onPress={handleSubmit}
+        disabled={disabled}
         style={({ pressed }) => [
           styles.button,
-          { backgroundColor: colors.primary, opacity: pressed ? 0.8 : 1 },
+          { backgroundColor: colors.primary, opacity: disabled ? 0.4 : pressed ? 0.8 : 1 },
         ]}>
         <Text style={[styles.buttonText, { color: colors.onPrimary }]}>{submitLabel}</Text>
       </Pressable>

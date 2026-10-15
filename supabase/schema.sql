@@ -8,10 +8,16 @@ create table if not exists public.expenses (
   category text not null,
   date timestamptz not null default now(),
   receipt_path text,
+  mpesa_code text,
   updated_at timestamptz not null default now()
 );
 
+-- Safe to re-run on a database created before the M-Pesa import existed.
+alter table public.expenses add column if not exists mpesa_code text;
+
 create index if not exists expenses_user_date_idx on public.expenses (user_id, date desc);
+create unique index if not exists expenses_user_mpesa_code_idx
+  on public.expenses (user_id, mpesa_code) where mpesa_code is not null;
 
 alter table public.expenses enable row level security;
 

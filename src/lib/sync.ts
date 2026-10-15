@@ -10,6 +10,7 @@ type ExpenseRow = {
   category: Category;
   date: string;
   receipt_path: string | null;
+  mpesa_code: string | null;
 };
 
 const toRow = (e: Expense, userId: string): ExpenseRow => ({
@@ -20,6 +21,7 @@ const toRow = (e: Expense, userId: string): ExpenseRow => ({
   category: e.category,
   date: e.date,
   receipt_path: e.receiptPath ?? null,
+  mpesa_code: e.mpesaCode ?? null,
 });
 
 const fromRow = (r: ExpenseRow): Expense => ({
@@ -29,6 +31,7 @@ const fromRow = (r: ExpenseRow): Expense => ({
   category: r.category,
   date: r.date,
   receiptPath: r.receipt_path ?? undefined,
+  mpesaCode: r.mpesa_code ?? undefined,
 });
 
 async function uploadReceipt(userId: string, expenseId: string, uri: string): Promise<string> {
@@ -90,7 +93,7 @@ async function pushChanges(userId: string) {
 async function pull() {
   const { data, error } = await supabase
     .from('expenses')
-    .select('id, user_id, title, amount, category, date, receipt_path')
+    .select('id, user_id, title, amount, category, date, receipt_path, mpesa_code')
     .order('date', { ascending: false });
   if (error) throw error;
 

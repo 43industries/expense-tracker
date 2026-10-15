@@ -38,6 +38,38 @@ Without Supabase keys the app runs **local-only**: no login screen, data stays o
 Supabase requires email confirmation by default. For quick testing you can turn it off under
 **Authentication > Sign In / Providers > Email**.
 
+## Add expenses from M-Pesa SMS
+
+Safaricom has no API for personal M-Pesa accounts and iOS doesn't let apps read SMS, so the app
+reads the confirmation message text instead. It understands money you **sent**, **paid** (Paybill
+and Till), **airtime** and **agent withdrawals**; messages for money you received are ignored.
+The amount, who you paid, the transaction date and a guessed category are filled in for you, and
+the M-Pesa code (e.g. `QJK1ABC2DE`) stops the same message being added twice.
+
+**Paste (iPhone and Android):** copy the M-Pesa SMS, open **Add expense**, expand
+**From M-Pesa SMS** and tap **Paste**. Check the form, then tap **Add expense**.
+
+**Automatic on iPhone (Shortcuts):** opens the app with the message already filled in every time
+an M-Pesa SMS arrives.
+
+1. Open **Shortcuts > Automation**, tap **+**, choose **Message**.
+2. Set **Sender** to `MPESA`, choose **Run Immediately**, tap **Next**, then **New Blank Automation**.
+3. Add **URL Encode** and set its input to **Shortcut Input** (the message content).
+4. Add **Text** with `expensetracker://add?sms=` followed by the **URL Encoded Text** variable.
+5. Add **Open URLs** with the **Text** from step 4.
+
+`expensetracker://` only works in an installed build (EAS). While testing in Expo Go, use
+`exp://<laptop-ip>:8081/--/add?sms=` in step 4 instead, for example
+`exp://172.20.10.2:8081/--/add?sms=`.
+
+If your Supabase database was created before this feature, run this once in the SQL Editor:
+
+```sql
+alter table public.expenses add column if not exists mpesa_code text;
+create unique index if not exists expenses_user_mpesa_code_idx
+  on public.expenses (user_id, mpesa_code) where mpesa_code is not null;
+```
+
 ## Build an installable APK (EAS Build)
 
 ```bash

@@ -38,7 +38,11 @@ export const useExpenseStore = create<ExpenseState>()(
       syncError: null,
 
       addExpense: (input) => {
-        const expense: Expense = { ...input, id: createId(), date: new Date().toISOString() };
+        const expense: Expense = {
+          ...input,
+          id: createId(),
+          date: input.date ?? new Date().toISOString(),
+        };
         set((s) => ({
           expenses: [expense, ...s.expenses],
           dirty: addUnique(s.dirty, expense.id),

@@ -14,9 +14,12 @@ export type Expense = {
   receiptUri?: string;
   /** Path of the uploaded photo in the Supabase `receipts` bucket. */
   receiptPath?: string;
+  /** Transaction code when imported from an M-Pesa SMS; used to block duplicates. */
+  mpesaCode?: string;
 };
 
 export type ExpenseInput = Pick<
   Expense,
   'title' | 'amount' | 'category' | 'receiptUri' | 'receiptPath'
->;
+> &
+  Partial<Pick<Expense, 'date' | 'mpesaCode'>>;
