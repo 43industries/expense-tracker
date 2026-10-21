@@ -80,9 +80,15 @@ into the installed app (`expensetracker://reset-password`). For that link to be 
 
 Safaricom has no API for personal M-Pesa accounts and iOS doesn't let apps read SMS, so the app
 reads the confirmation message text instead. It understands money you **sent**, **paid** (Paybill
-and Till), **airtime** and **agent withdrawals**; messages for money you received are ignored.
-The amount, who you paid, the transaction date and a guessed category are filled in for you, and
-the M-Pesa code (e.g. `QJK1ABC2DE`) stops the same message being added twice.
+and Till), **airtime** and **agent withdrawals**, plus money you **received** — from another
+person, a business or salary payment, a bank transfer, or an M-Shwari credit. Outgoing messages
+are filled in as expenses with a guessed category; incoming messages are filled in as income
+with the sender as the title and category **Other** (change it in the form if you like). A
+**reversal** that refunds a payment you already added is flagged with a link to the original
+entry instead of being booked as new income, so it isn't double-counted; a reversal whose
+original payment isn't in the app is booked as income. The amount, counterparty, transaction
+date and category are filled in for you, and the M-Pesa code (e.g. `QJK1ABC2DE`) stops the
+same message being added twice.
 
 **Paste (iPhone and Android):** copy the M-Pesa SMS, open **Add expense**, expand
 **From M-Pesa SMS** and tap **Paste**. Check the form, then tap **Add expense**.

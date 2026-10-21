@@ -39,6 +39,13 @@ export default function AddExpenseScreen() {
   const duplicate = useExpenseStore((s) =>
     parsed ? s.expenses.find((e) => e.mpesaCode === parsed.code) : undefined,
   );
+  // A reversal refunds an earlier payment: if that payment is already in the
+  // list, flag it instead of booking the refund as new income.
+  const reversalMatch = useExpenseStore((s) =>
+    parsed?.originalCode
+      ? s.expenses.find((e) => e.mpesaCode === parsed.originalCode)
+      : undefined,
+  );
   const kesRate = rates.data?.KES;
   const waitingForRates = !!parsed && !kesRate;
 
@@ -50,14 +57,15 @@ export default function AddExpenseScreen() {
       return (
         <Text style={{ color: colors.danger }}>
           This doesn&apos;t look like an M-Pesa payment. Paste the full &quot;Confirmed&quot; message
-          for money you sent, paid or withdrew.
+          for money you sent, paid, withdrew or received.
         </Text>
       );
     }
 
     const summary = (
       <Text style={{ color: colors.text }}>
-        {formatMoney(parsed.amountKes, 'KES')} to {parsed.counterparty} on {formatDate(parsed.date)}
+        {formatMoney(parsed.amountKes, 'KES')} {parsed.kind === 'income' ? 'from' : 'to'}{' '}
+        {parsed.counterparty} on {formatDate(parsed.date)}
         {' · '}
         <Text style={{ color: colors.textSecondary }}>{parsed.code}</Text>
         {parsed.feeKes ? (
@@ -77,6 +85,25 @@ export default function AddExpenseScreen() {
           <Pressable
             onPress={() =>
               router.replace({ pathname: '/expense/[id]', params: { id: duplicate.id } })
+            }>
+            <Text style={{ color: colors.primary, fontWeight: '700' }}>View it</Text>
+          </Pressable>
+        </View>
+      );
+    }
+
+    if (reversalMatch) {
+      return (
+        <View style={styles.status}>
+          {summary}
+          <Text style={{ color: colors.warning }}>
+            This reverses &quot;{reversalMatch.title}&quot; (
+            {formatDate(reversalMatch.date)}), which you already added. Booking it as income
+            would double-count, so open the original instead and edit or delete it.
+          </Text>
+          <Pressable
+            onPress={() =>
+              router.replace({ pathname: '/expense/[id]', params: { id: reversalMatch.id } })
             }>
             <Text style={{ color: colors.primary, fontWeight: '700' }}>View it</Text>
           </Pressable>
@@ -128,15 +155,15 @@ export default function AddExpenseScreen() {
                     title: parsed.counterparty,
                     amount: parsed.amountKes / kesRate,
                     category: parsed.category,
-                    kind: 'expense',
+                    kind: parsed.kind,
                   }
                 : undefined
             }
-            disabled={!!duplicate}
+            disabled={!!duplicate || !!reversalMatch}
             onSubmit={(input) => {
               addExpense(
                 parsed
-                  ? { ...input, kind: 'expense', date: parsed.date, mpesaCode: parsed.code }
+                  ? { ...input, kind: parsed.kind, date: parsed.date, mpesaCode: parsed.code }
                   : input,
               );
               close();
