@@ -69,9 +69,16 @@ Supabase requires email confirmation by default. For quick testing you can turn 
 The **Forgot password?** link on the login screen emails a reset link that deep-links back
 into the installed app (`expensetracker://reset-password`). For that link to be accepted:
 
-1. In the Supabase dashboard open **Authentication > URL Configuration** and add
-   `expensetracker://reset-password` under **Redirect URLs**.
+1. In the Supabase dashboard open **Authentication > URL Configuration**. Current live
+   values (verified 21 Oct 2026): **Redirect URLs** contains both `expensetracker://**`
+   and `expensetracker://reset-password`; **Site URL** is `http://localhost:3000`, which
+   is only a fallback for redirects that match no allow-list entry and does not affect
+   the app link. Add `expensetracker://reset-password` under **Redirect URLs** on any
+   new project (the wildcard alone matched in testing, the explicit entry is belt and
+   braces).
 2. Under **Authentication > Emails**, confirm the **Reset password** template is enabled.
+   This project uses the default templates (no custom SMTP), which link via
+   `{{ .ConfirmationURL }}` and therefore honour the app's `redirectTo`.
 3. Rebuild/reinstall the app (the `expensetracker` scheme only works in an installed
    EAS/development build, not Expo Go). Tapping the email link opens the reset screen;
    expired or already-used links show an error with a path back to sign-in.
