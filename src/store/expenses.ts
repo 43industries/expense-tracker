@@ -40,6 +40,8 @@ export const useExpenseStore = create<ExpenseState>()(
       addExpense: (input) => {
         const expense: Expense = {
           ...input,
+          kind: input.kind ?? 'expense',
+          notes: input.notes?.trim() || undefined,
           id: createId(),
           date: input.date ?? new Date().toISOString(),
         };
@@ -50,7 +52,16 @@ export const useExpenseStore = create<ExpenseState>()(
       },
       updateExpense: (id, input) =>
         set((s) => ({
-          expenses: s.expenses.map((e) => (e.id === id ? { ...e, ...input } : e)),
+          expenses: s.expenses.map((e) =>
+            e.id === id
+              ? {
+                  ...e,
+                  ...input,
+                  kind: input.kind ?? e.kind ?? 'expense',
+                  notes: input.notes?.trim() || undefined,
+                }
+              : e,
+          ),
           dirty: addUnique(s.dirty, id),
         })),
       removeExpense: (id) =>

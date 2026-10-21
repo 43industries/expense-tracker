@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import * as Linking from 'expo-linking';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Radius, Spacing } from '@/constants/theme';
@@ -23,6 +24,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
@@ -51,6 +53,29 @@ export default function LoginScreen() {
     } else if (mode === 'signUp' && !data.session) {
       setInfo('Account created. Check your email to confirm it, then sign in.');
       setMode('signIn');
+    }
+  };
+
+  const forgotPassword = async () => {
+    setError(null);
+    setInfo(null);
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+      setError('Enter your email address above, then tap Forgot password');
+      return;
+    }
+
+    setForgotLoading(true);
+    const redirectTo = Linking.createURL('reset-password');
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo,
+    });
+    setForgotLoading(false);
+
+    if (resetError) {
+      setError(resetError.message);
+    } else {
+      // Neutral wording: don't reveal whether this email has an account.
+      setInfo('If an account exists for that email, a password reset link is on its way.');
     }
   };
 
@@ -91,6 +116,20 @@ export default function LoginScreen() {
           style={inputStyle}
           onSubmitEditing={submit}
         />
+
+        {mode === 'signIn' && (
+          <Pressable
+            onPress={forgotPassword}
+            disabled={forgotLoading}
+            style={styles.forgot}
+            hitSlop={8}>
+            {forgotLoading ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Text style={{ color: colors.primary, fontWeight: '600' }}>Forgot password?</Text>
+            )}
+          </Pressable>
+        )}
 
         {error && <Text style={{ color: colors.danger }}>{error}</Text>}
         {info && <Text style={{ color: colors.success }}>{info}</Text>}
@@ -160,5 +199,11 @@ const styles = StyleSheet.create({
   switch: {
     alignItems: 'center',
     paddingVertical: Spacing.sm,
+  },
+  forgot: {
+    alignSelf: 'flex-end',
+    paddingVertical: Spacing.xs,
+    minHeight: 28,
+    justifyContent: 'center',
   },
 });

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -19,10 +19,17 @@ export default function RootLayout() {
   const colors = useColors();
   const initialized = useAuthStore((s) => s.initialized);
   const session = useAuthStore((s) => s.session);
+  const recoveryPending = useAuthStore((s) => s.recoveryPending);
 
   useEffect(() => {
     initAuth();
   }, []);
+
+  // A recovery link takes over the whole app until the password is changed,
+  // even though the recovery session makes the user look "signed in".
+  useEffect(() => {
+    if (initialized && recoveryPending) router.replace('/reset-password');
+  }, [initialized, recoveryPending]);
 
   useEffect(() => {
     if (initialized) SplashScreen.hideAsync();
@@ -52,12 +59,15 @@ export default function RootLayout() {
         <ThemeProvider value={navTheme}>
           <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
           <Stack>
-            <Stack.Protected guard={signedIn}>
+            <Stack.Protected guard={recoveryPending}>
+              <Stack.Screen name="reset-password" options={{ headerShown: false }} />
+            </Stack.Protected>
+            <Stack.Protected guard={signedIn && !recoveryPending}>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="add" options={{ title: 'Add expense', presentation: 'modal' }} />
               <Stack.Screen name="expense/[id]" options={{ title: 'Edit expense' }} />
             </Stack.Protected>
-            <Stack.Protected guard={!signedIn}>
+            <Stack.Protected guard={!signedIn && !recoveryPending}>
               <Stack.Screen name="login" options={{ headerShown: false }} />
             </Stack.Protected>
           </Stack>

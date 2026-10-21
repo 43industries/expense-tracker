@@ -1,11 +1,17 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { ReceiptPicker } from '@/components/ReceiptPicker';
+import { SegmentedControl } from '@/components/SegmentedControl';
 import { Radius, Spacing } from '@/constants/theme';
 import { useColors } from '@/hooks/use-colors';
 import { useMoney } from '@/hooks/use-money';
-import { CATEGORIES, type Category, type ExpenseInput } from '@/types/expense';
+import { useSettingsStore } from '@/store/settings';
+import {
+  DEFAULT_CATEGORIES,
+  type ExpenseInput,
+  type ExpenseKind,
+} from '@/types/expense';
 
 type Props = {
   initial?: Partial<ExpenseInput>;
@@ -15,6 +21,11 @@ type Props = {
 };
 
 type Errors = { title?: string; amount?: string };
+
+const KIND_OPTIONS = [
+  { value: 'expense', label: 'Expense' },
+  { value: 'income', label: 'Income' },
+] as const satisfies readonly { value: ExpenseKind; label: string }[];
 
 export function validateExpense(title: string, amountText: string): Errors {
   const errors: Errors = {};
@@ -37,20 +48,31 @@ export function validateExpense(title: string, amountText: string): Errors {
 
 export function ExpenseForm({
   initial,
-  submitLabel = 'Add expense',
+  submitLabel,
   disabled = false,
   onSubmit,
 }: Props) {
   const colors = useColors();
   const { currency, toDisplay, fromDisplay } = useMoney();
+  const customCategories = useSettingsStore((s) => s.customCategories);
+  const [kind, setKind] = useState<ExpenseKind>(initial?.kind ?? 'expense');
   const [title, setTitle] = useState(initial?.title ?? '');
   const [amountText, setAmountText] = useState(
     initial?.amount ? String(Math.round(toDisplay(initial.amount) * 100) / 100) : '',
   );
-  const [category, setCategory] = useState<Category>(initial?.category ?? 'Food');
+  const [category, setCategory] = useState(initial?.category ?? 'Food');
+  const [notes, setNotes] = useState(initial?.notes ?? '');
   const [receiptUri, setReceiptUri] = useState(initial?.receiptUri);
   const [receiptPath, setReceiptPath] = useState(initial?.receiptPath);
   const [errors, setErrors] = useState<Errors>({});
+
+  const categories = useMemo(() => {
+    const defaults = new Set<string>(DEFAULT_CATEGORIES);
+    return [
+      ...DEFAULT_CATEGORIES,
+      ...customCategories.filter((c) => !defaults.has(c)),
+    ];
+  }, [customCategories]);
 
   const changeReceipt = (uri: string | undefined) => {
     setReceiptUri(uri);
@@ -67,6 +89,8 @@ export function ExpenseForm({
       title: title.trim(),
       amount: Math.round(fromDisplay(Number(amountText.replace(',', '.'))) * 1e6) / 1e6,
       category,
+      kind,
+      notes: notes.trim() || undefined,
       receiptUri,
       receiptPath,
     });
@@ -75,6 +99,8 @@ export function ExpenseForm({
       setTitle('');
       setAmountText('');
       setCategory('Food');
+      setNotes('');
+      setKind('expense');
       changeReceipt(undefined);
     }
   };
@@ -84,14 +110,21 @@ export function ExpenseForm({
     { color: colors.text, backgroundColor: colors.card, borderColor: colors.border },
   ];
 
+  const label = submitLabel ?? (kind === 'income' ? 'Add income' : 'Add expense');
+
   return (
     <View style={styles.form}>
+      <View style={styles.field}>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>Type</Text>
+        <SegmentedControl options={KIND_OPTIONS} value={kind} onChange={setKind} />
+      </View>
+
       <View style={styles.field}>
         <Text style={[styles.label, { color: colors.textSecondary }]}>Title</Text>
         <TextInput
           value={title}
           onChangeText={setTitle}
-          placeholder="e.g. Lunch"
+          placeholder={kind === 'income' ? 'e.g. Salary' : 'e.g. Lunch'}
           placeholderTextColor={colors.textSecondary}
           style={[inputStyle, errors.title && { borderColor: colors.danger }]}
           returnKeyType="next"
@@ -117,7 +150,7 @@ export function ExpenseForm({
       <View style={styles.field}>
         <Text style={[styles.label, { color: colors.textSecondary }]}>Category</Text>
         <View style={styles.chips}>
-          {CATEGORIES.map((c) => {
+          {categories.map((c) => {
             const selected = c === category;
             return (
               <Pressable
@@ -137,6 +170,19 @@ export function ExpenseForm({
         </View>
       </View>
 
+      <View style={styles.field}>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>Notes (optional)</Text>
+        <TextInput
+          value={notes}
+          onChangeText={setNotes}
+          placeholder="Add a note"
+          placeholderTextColor={colors.textSecondary}
+          style={[inputStyle, styles.notes]}
+          multiline
+          textAlignVertical="top"
+        />
+      </View>
+
       <ReceiptPicker uri={receiptUri} path={receiptPath} onChange={changeReceipt} />
 
       <Pressable
@@ -146,7 +192,7 @@ export function ExpenseForm({
           styles.button,
           { backgroundColor: colors.primary, opacity: disabled ? 0.4 : pressed ? 0.8 : 1 },
         ]}>
-        <Text style={[styles.buttonText, { color: colors.onPrimary }]}>{submitLabel}</Text>
+        <Text style={[styles.buttonText, { color: colors.onPrimary }]}>{label}</Text>
       </Pressable>
     </View>
   );
@@ -169,6 +215,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: 12,
     fontSize: 16,
+  },
+  notes: {
+    minHeight: 72,
   },
   error: {
     fontSize: 13,

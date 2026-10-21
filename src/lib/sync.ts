@@ -1,14 +1,16 @@
 import { RECEIPTS_BUCKET, isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { useExpenseStore } from '@/store/expenses';
-import type { Category, Expense } from '@/types/expense';
+import type { Expense, ExpenseKind } from '@/types/expense';
 
 type ExpenseRow = {
   id: string;
   user_id: string;
   title: string;
   amount: number;
-  category: Category;
+  category: string;
+  kind: ExpenseKind;
   date: string;
+  notes: string | null;
   receipt_path: string | null;
   mpesa_code: string | null;
 };
@@ -19,7 +21,9 @@ const toRow = (e: Expense, userId: string): ExpenseRow => ({
   title: e.title,
   amount: e.amount,
   category: e.category,
+  kind: e.kind ?? 'expense',
   date: e.date,
+  notes: e.notes?.trim() ? e.notes.trim() : null,
   receipt_path: e.receiptPath ?? null,
   mpesa_code: e.mpesaCode ?? null,
 });
@@ -29,7 +33,9 @@ const fromRow = (r: ExpenseRow): Expense => ({
   title: r.title,
   amount: Number(r.amount),
   category: r.category,
+  kind: r.kind === 'income' ? 'income' : 'expense',
   date: r.date,
+  notes: r.notes ?? undefined,
   receiptPath: r.receipt_path ?? undefined,
   mpesaCode: r.mpesa_code ?? undefined,
 });
@@ -93,7 +99,7 @@ async function pushChanges(userId: string) {
 async function pull() {
   const { data, error } = await supabase
     .from('expenses')
-    .select('id, user_id, title, amount, category, date, receipt_path, mpesa_code')
+    .select('id, user_id, title, amount, category, kind, notes, date, receipt_path, mpesa_code')
     .order('date', { ascending: false });
   if (error) throw error;
 

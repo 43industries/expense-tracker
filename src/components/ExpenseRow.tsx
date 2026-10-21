@@ -15,6 +15,7 @@ type Props = {
 export function ExpenseRow({ expense, onPress }: Props) {
   const colors = useColors();
   const { format } = useMoney();
+  const isIncome = (expense.kind ?? 'expense') === 'income';
 
   return (
     <Pressable
@@ -31,13 +32,17 @@ export function ExpenseRow({ expense, onPress }: Props) {
         <View style={styles.metaRow}>
           <Text style={[styles.meta, { color: colors.textSecondary }]}>
             {expense.category} · {formatDate(expense.date)}
+            {isIncome ? ' · Income' : ''}
           </Text>
           {(expense.receiptUri || expense.receiptPath) && (
             <Ionicons name="receipt-outline" size={13} color={colors.textSecondary} />
           )}
         </View>
       </View>
-      <Text style={[styles.amount, { color: colors.danger }]}>-{format(expense.amount)}</Text>
+      <Text style={[styles.amount, { color: isIncome ? colors.success : colors.danger }]}>
+        {isIncome ? '+' : '-'}
+        {format(expense.amount)}
+      </Text>
     </Pressable>
   );
 }

@@ -1,19 +1,34 @@
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
 
+import { materializeRecurring } from '@/lib/recurring';
 import { syncExpenses } from '@/lib/sync';
 import { useAuthStore } from '@/store/auth';
 import { useExpenseStore } from '@/store/expenses';
+import { useRecurringStore } from '@/store/recurring';
 
 const DEBOUNCE_MS = 1500;
 
-/** Syncs on login, shortly after local changes, and whenever the app returns to the foreground. */
+/** Materializes due recurring rules, then syncs when signed in. */
 export function useAutoSync() {
   const userId = useAuthStore((s) => s.session?.user.id);
-  const hydrated = useExpenseStore((s) => s.hydrated);
+  const expenseHydrated = useExpenseStore((s) => s.hydrated);
+  const recurringHydrated = useRecurringStore((s) => s.hydrated);
 
   useEffect(() => {
-    if (!userId || !hydrated) return;
+    if (!expenseHydrated || !recurringHydrated) return;
+
+    materializeRecurring();
+
+    const appState = AppState.addEventListener('change', (state) => {
+      if (state === 'active') materializeRecurring();
+    });
+
+    return () => appState.remove();
+  }, [expenseHydrated, recurringHydrated]);
+
+  useEffect(() => {
+    if (!userId || !expenseHydrated) return;
 
     syncExpenses();
 
@@ -34,5 +49,5 @@ export function useAutoSync() {
       unsubscribe();
       appState.remove();
     };
-  }, [userId, hydrated]);
+  }, [userId, expenseHydrated]);
 }

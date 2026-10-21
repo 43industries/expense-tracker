@@ -6,6 +6,8 @@ create table if not exists public.expenses (
   title text not null check (char_length(title) between 1 and 60),
   amount numeric not null check (amount > 0),
   category text not null,
+  kind text not null default 'expense' check (kind in ('expense', 'income')),
+  notes text,
   date timestamptz not null default now(),
   receipt_path text,
   mpesa_code text,
@@ -14,6 +16,8 @@ create table if not exists public.expenses (
 
 -- Safe to re-run on a database created before the M-Pesa import existed.
 alter table public.expenses add column if not exists mpesa_code text;
+alter table public.expenses add column if not exists kind text not null default 'expense';
+alter table public.expenses add column if not exists notes text;
 
 create index if not exists expenses_user_date_idx on public.expenses (user_id, date desc);
 create unique index if not exists expenses_user_mpesa_code_idx

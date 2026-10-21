@@ -1,4 +1,4 @@
-import type { Category } from '@/types/expense';
+import type { DefaultCategory } from '@/types/expense';
 
 export type ParsedMpesa = {
   /** M-Pesa transaction code, e.g. "QJK1ABC2DE". Unique per transaction. */
@@ -8,7 +8,7 @@ export type ParsedMpesa = {
   counterparty: string;
   /** ISO 8601 timestamp of the transaction. */
   date: string;
-  category: Category;
+  category: DefaultCategory;
 };
 
 const AMOUNT = 'Ksh\\s?([\\d,]+(?:\\.\\d{1,2})?)';
@@ -22,7 +22,7 @@ const PAID_RE = new RegExp(`${AMOUNT} paid to (.+?)\\.? on \\d`, 'i');
 const AIRTIME_RE = new RegExp(`You bought ${AMOUNT} of airtime`, 'i');
 const WITHDRAW_RE = new RegExp(`Withdraw ${AMOUNT} from (.+?)(?:\\s+New M-?PESA|\\.\\s|$)`, 'i');
 
-const CATEGORY_KEYWORDS: [Category, RegExp][] = [
+const CATEGORY_KEYWORDS: [DefaultCategory, RegExp][] = [
   ['Bills', /\b(kplc|zuku|safaricom|airtel|airtime|faiba|nairobi water|dstv|gotv|startimes|home fibre|nhif|sha)\b/i],
   ['Transport', /\b(uber|bolt|little|faras|shell|total|rubis|petrol|fuel|matatu|sacco|parking)\b/i],
   ['Food', /\b(java|kfc|chicken inn|pizza|cafe|restaurant|hotel|butchery|artcaffe|glovo)\b/i],
@@ -50,7 +50,7 @@ function parseDate(text: string): string {
   return new Date(year, Number(mo) - 1, Number(d), hour, Number(min)).toISOString();
 }
 
-export function guessCategory(counterparty: string): Category {
+export function guessCategory(counterparty: string): DefaultCategory {
   for (const [category, re] of CATEGORY_KEYWORDS) {
     if (re.test(counterparty)) return category;
   }

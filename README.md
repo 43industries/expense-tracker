@@ -17,11 +17,37 @@ React Native Intern Program.
 
    ```bash
    npm install
-   npx expo start
    ```
 
-3. Scan the QR code (Android: from Expo Go; iPhone: with the Camera app). Your phone and
-   computer must be on the same Wi-Fi; if not, use `npx expo start --tunnel`.
+3. Start the dev server:
+
+   - **Same Wi-Fi** as your computer:
+
+     ```bash
+     npm start
+     ```
+
+   - **Other networks** (different Wi-Fi or mobile data):
+
+     ```bash
+     npm run start:tunnel
+     ```
+
+4. Scan the QR code (Android: from Expo Go; iPhone: with the Camera app).
+
+**Windows note (tunnel):** if `npm run start:tunnel` fails with `Received null` or
+`ngrok.exe ENOENT`, Windows Defender has quarantined Expo’s ngrok binary.
+
+1. Open **Windows Security → Virus & threat protection → Protection history**.
+2. Find the blocked `ngrok.exe`, choose **Restore** / **Allow**.
+3. Prefer an exclusion for
+   `node_modules\@expo\ngrok-bin-win32-x64` (run PowerShell as Administrator if needed).
+4. Restore the binary, then start the tunnel:
+
+   ```bash
+   npm run restore:ngrok
+   npm run start:tunnel
+   ```
 
 Without Supabase keys the app runs **local-only**: no login screen, data stays on the phone.
 
@@ -37,6 +63,18 @@ Without Supabase keys the app runs **local-only**: no login screen, data stays o
 
 Supabase requires email confirmation by default. For quick testing you can turn it off under
 **Authentication > Sign In / Providers > Email**.
+
+### Forgot password setup
+
+The **Forgot password?** link on the login screen emails a reset link that deep-links back
+into the installed app (`expensetracker://reset-password`). For that link to be accepted:
+
+1. In the Supabase dashboard open **Authentication > URL Configuration** and add
+   `expensetracker://reset-password` under **Redirect URLs**.
+2. Under **Authentication > Emails**, confirm the **Reset password** template is enabled.
+3. Rebuild/reinstall the app (the `expensetracker` scheme only works in an installed
+   EAS/development build, not Expo Go). Tapping the email link opens the reset screen;
+   expired or already-used links show an error with a path back to sign-in.
 
 ## Add expenses from M-Pesa SMS
 
@@ -68,6 +106,13 @@ If your Supabase database was created before this feature, run this once in the 
 alter table public.expenses add column if not exists mpesa_code text;
 create unique index if not exists expenses_user_mpesa_code_idx
   on public.expenses (user_id, mpesa_code) where mpesa_code is not null;
+```
+
+If your database was created before income/notes support, also run:
+
+```sql
+alter table public.expenses add column if not exists kind text not null default 'expense';
+alter table public.expenses add column if not exists notes text;
 ```
 
 ## Build an installable APK (EAS Build)

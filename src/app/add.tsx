@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -24,13 +24,16 @@ export default function AddExpenseScreen() {
   const colors = useColors();
   const addExpense = useExpenseStore((s) => s.addExpense);
   const { sms } = useLocalSearchParams<{ sms?: string }>();
-  const [smsText, setSmsText] = useState(sms ?? '');
+  const smsParam = typeof sms === 'string' ? sms : '';
+  const [smsText, setSmsText] = useState(smsParam);
+  const [seenSmsParam, setSeenSmsParam] = useState(smsParam);
   const rates = useRates();
 
   // A deep link can arrive while this screen is already open.
-  useEffect(() => {
-    if (sms) setSmsText(sms);
-  }, [sms]);
+  if (smsParam !== seenSmsParam) {
+    setSeenSmsParam(smsParam);
+    if (smsParam) setSmsText(smsParam);
+  }
 
   const parsed = useMemo(() => (smsText.trim() ? parseMpesaSms(smsText) : null), [smsText]);
   const duplicate = useExpenseStore((s) =>
@@ -46,8 +49,8 @@ export default function AddExpenseScreen() {
     if (!parsed) {
       return (
         <Text style={{ color: colors.danger }}>
-          This doesn't look like an M-Pesa payment. Paste the full "Confirmed" message for money
-          you sent, paid or withdrew.
+          This doesn&apos;t look like an M-Pesa payment. Paste the full &quot;Confirmed&quot; message
+          for money you sent, paid or withdrew.
         </Text>
       );
     }
@@ -93,7 +96,7 @@ export default function AddExpenseScreen() {
           ) : (
             <View style={styles.inline}>
               <Text style={{ color: colors.danger, flex: 1 }}>
-                Couldn't load the KES exchange rate needed to convert this amount.
+                Couldn&apos;t load the KES exchange rate needed to convert this amount.
               </Text>
               <Pressable onPress={() => rates.refetch()} hitSlop={8}>
                 <Text style={{ color: colors.primary, fontWeight: '700' }}>Retry</Text>
@@ -125,12 +128,17 @@ export default function AddExpenseScreen() {
                     title: parsed.counterparty,
                     amount: parsed.amountKes / kesRate,
                     category: parsed.category,
+                    kind: 'expense',
                   }
                 : undefined
             }
             disabled={!!duplicate}
             onSubmit={(input) => {
-              addExpense(parsed ? { ...input, date: parsed.date, mpesaCode: parsed.code } : input);
+              addExpense(
+                parsed
+                  ? { ...input, kind: 'expense', date: parsed.date, mpesaCode: parsed.code }
+                  : input,
+              );
               close();
             }}
           />

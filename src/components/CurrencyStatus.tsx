@@ -23,7 +23,7 @@ export function CurrencyStatus() {
   return (
     <View style={[styles.banner, { backgroundColor: colors.card, borderColor: colors.danger }]}>
       <Text style={[styles.text, { color: colors.text }]}>
-        Couldn't load KES rates, so amounts are shown in USD.
+        Couldn&apos;t load KES rates, so amounts are shown in USD.
       </Text>
       <Pressable onPress={() => rates.refetch()} disabled={rates.isFetching} hitSlop={8}>
         {rates.isFetching ? (

@@ -1,15 +1,31 @@
-export const CATEGORIES = ['Food', 'Transport', 'Bills', 'Shopping', 'Fun', 'Other'] as const;
+export const DEFAULT_CATEGORIES = [
+  'Food',
+  'Transport',
+  'Bills',
+  'Shopping',
+  'Fun',
+  'Other',
+] as const;
 
-export type Category = (typeof CATEGORIES)[number];
+/** @deprecated Prefer DEFAULT_CATEGORIES */
+export const CATEGORIES = DEFAULT_CATEGORIES;
+
+export type DefaultCategory = (typeof DEFAULT_CATEGORIES)[number];
+/** @deprecated Prefer string category + DEFAULT_CATEGORIES */
+export type Category = DefaultCategory;
+
+export type ExpenseKind = 'expense' | 'income';
 
 export type Expense = {
   id: string;
   title: string;
   /** Always stored in USD; converted only for display. */
   amount: number;
-  category: Category;
+  category: string;
+  kind: ExpenseKind;
   /** ISO 8601 timestamp. */
   date: string;
+  notes?: string;
   /** Photo on this device (from the camera or library). */
   receiptUri?: string;
   /** Path of the uploaded photo in the Supabase `receipts` bucket. */
@@ -20,6 +36,6 @@ export type Expense = {
 
 export type ExpenseInput = Pick<
   Expense,
-  'title' | 'amount' | 'category' | 'receiptUri' | 'receiptPath'
+  'title' | 'amount' | 'category' | 'kind' | 'receiptUri' | 'receiptPath'
 > &
-  Partial<Pick<Expense, 'date' | 'mpesaCode'>>;
+  Partial<Pick<Expense, 'date' | 'mpesaCode' | 'notes'>>;

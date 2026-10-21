@@ -42,7 +42,8 @@
           "cameraPermission": "Allow Expense Tracker to use your camera so you can photograph receipts."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,

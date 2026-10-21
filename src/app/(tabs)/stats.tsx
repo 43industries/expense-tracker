@@ -6,7 +6,7 @@ import { MonthlyChart } from '@/components/MonthlyChart';
 import { Radius, Spacing } from '@/constants/theme';
 import { useColors } from '@/hooks/use-colors';
 import { useMoney } from '@/hooks/use-money';
-import { categoryTotals, monthKey, monthlyTotals } from '@/lib/stats';
+import { categoryTotals, incomeInMonth, monthKey, monthlyTotals } from '@/lib/stats';
 import { useExpenseStore } from '@/store/expenses';
 
 export default function StatsScreen() {
@@ -18,6 +18,7 @@ export default function StatsScreen() {
   const months = useMemo(() => monthlyTotals(expenses), [expenses]);
   const categories = useMemo(() => categoryTotals(expenses, selected), [expenses, selected]);
   const selectedTotal = months.find((m) => m.key === selected)?.total ?? 0;
+  const incomeTotal = useMemo(() => incomeInMonth(expenses, selected), [expenses, selected]);
   const average = months.reduce((sum, m) => sum + m.total, 0) / months.length;
 
   const [year, month] = selected.split('-').map(Number);
@@ -36,8 +37,13 @@ export default function StatsScreen() {
         <Text style={[styles.caption, { color: colors.textSecondary }]}>{selectedName}</Text>
         <Text style={[styles.total, { color: colors.text }]}>{format(selectedTotal)}</Text>
         <Text style={[styles.caption, { color: colors.textSecondary }]}>
-          6-month average: {format(average)}
+          Spent · 6-month average: {format(average)}
         </Text>
+        {incomeTotal > 0 && (
+          <Text style={[styles.caption, { color: colors.success }]}>
+            Income this month: {format(incomeTotal)}
+          </Text>
+        )}
         <View style={{ marginTop: Spacing.md }}>
           <MonthlyChart
             data={months}
@@ -63,7 +69,10 @@ export default function StatsScreen() {
                 <View
                   style={[
                     styles.fill,
-                    { backgroundColor: colors.primary, width: `${(total / selectedTotal) * 100}%` },
+                    {
+                      backgroundColor: colors.primary,
+                      width: `${selectedTotal > 0 ? (total / selectedTotal) * 100 : 0}%`,
+                    },
                   ]}
                 />
               </View>
