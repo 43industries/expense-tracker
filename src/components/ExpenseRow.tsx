@@ -26,20 +26,33 @@ export function ExpenseRow({ expense, onPress }: Props) {
         { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
       ]}>
       <View style={styles.info}>
-        <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+        <Text
+          style={[styles.title, { color: colors.text }]}
+          numberOfLines={1}
+          ellipsizeMode="tail">
           {expense.title}
         </Text>
         <View style={styles.metaRow}>
-          <Text style={[styles.meta, { color: colors.textSecondary }]}>
+          <Text
+            style={[styles.meta, { color: colors.textSecondary }]}
+            numberOfLines={1}
+            ellipsizeMode="tail">
             {expense.category} · {formatDate(expense.date)}
             {isIncome ? ' · Income' : ''}
           </Text>
           {(expense.receiptUri || expense.receiptPath) && (
-            <Ionicons name="receipt-outline" size={13} color={colors.textSecondary} />
+            <Ionicons
+              name="receipt-outline"
+              size={13}
+              color={colors.textSecondary}
+              style={styles.receiptIcon}
+            />
           )}
         </View>
       </View>
-      <Text style={[styles.amount, { color: isIncome ? colors.success : colors.danger }]}>
+      <Text
+        style={[styles.amount, { color: isIncome ? colors.success : colors.danger }]}
+        numberOfLines={1}>
         {isIncome ? '+' : '-'}
         {format(expense.amount)}
       </Text>
@@ -58,6 +71,7 @@ const styles = StyleSheet.create({
   },
   info: {
     flex: 1,
+    minWidth: 0,
     gap: 2,
   },
   title: {
@@ -67,12 +81,20 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    minWidth: 0,
     gap: Spacing.xs,
   },
   meta: {
+    flexShrink: 1,
     fontSize: 13,
   },
+  receiptIcon: {
+    flexShrink: 0,
+  },
   amount: {
+    flexShrink: 0,
+    maxWidth: '45%',
+    textAlign: 'right',
     fontSize: 16,
     fontWeight: '700',
   },

@@ -9,7 +9,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import * as Linking from 'expo-linking';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Radius, Spacing } from '@/constants/theme';
@@ -65,7 +64,11 @@ export default function LoginScreen() {
     }
 
     setForgotLoading(true);
-    const redirectTo = Linking.createURL('reset-password');
+    // Deliberately not Linking.createURL(): in a standalone build it returns
+    // "expensetracker:///reset-password" (triple slash, empty host), which
+    // Supabase's redirect allow-list matching rejects, silently falling back
+    // to the Site URL. The literal below matches the allow-listed entry.
+    const redirectTo = 'expensetracker://reset-password';
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo,
     });

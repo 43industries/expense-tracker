@@ -198,10 +198,15 @@ const styles = StyleSheet.create({
   },
   chipsScroll: {
     flexGrow: 0,
+    flexShrink: 0,
     marginBottom: Spacing.sm,
   },
   chips: {
     paddingHorizontal: Spacing.md,
+    // Vertical padding stops Android clipping the chips (and their text)
+    // inside the horizontal ScrollView.
+    paddingVertical: Spacing.xs,
+    alignItems: 'center',
     gap: Spacing.sm,
   },
   chip: {
@@ -209,6 +214,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 8,
+    justifyContent: 'center',
   },
   hint: {
     fontSize: 12,
